@@ -18,7 +18,7 @@ class HtmlParser(object):
         new_urls = set()
         bdzd_content = soup.find("div", class_="content-wrapper")
         # print(bdzd_content)
-        links = bdzd_content.find_all('a', href=re.compile(r'/item/[%..]+[/\d+]?'))
+        links = bdzd_content.find_all('a', href=re.compile(r'/item/[%..]+[/\d+]?'), limit=3)
         for link in links:
             # print(link)
             new_url = link['href']
@@ -32,6 +32,9 @@ class HtmlParser(object):
         title = soup.find('dd', class_='lemmaWgt-lemmaTitle-title').find('h1')
         data['title'] = title.get_text()
         summary = soup.find('div', class_='lemma-summary')
-        data['summary'] = summary.get_text()
+        if summary is None:
+            data['summary'] = None
+        else:
+            data['summary'] = summary.get_text()
         # print(data)
         return data

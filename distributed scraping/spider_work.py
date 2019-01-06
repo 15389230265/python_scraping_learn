@@ -3,6 +3,8 @@ from multiprocessing.managers import BaseManager
 from HtmlDownloader import HtmlDownloader
 from HtmlParser import HtmlParser
 import sys
+import time
+
 
 class SpiderWork(object):
     def __init__(self):
@@ -10,7 +12,7 @@ class SpiderWork(object):
         BaseManager.register('get_result_queue')
         server_addr = '127.0.0.1'
         print("Connect to server {}...".format(server_addr))
-        self.m = BaseManager(address=(server_addr, 8001), authkey=b'baike')
+        self.m = BaseManager(address=(server_addr, 8001), authkey=bytes('baike', 'utf-8'))
         self.m.connect()
         self.task = self.m.get_task_queue()
         self.result = self.m.get_result_queue()
@@ -25,17 +27,27 @@ class SpiderWork(object):
                     url = self.task.get()
                     if url == 'end':
                         print("控制节点通知爬虫节点停止工作。。。")
-                        self.result.put({'new_urls':'end', 'data':'end'})
+                        self.result.put({'new_urls': 'end', 'data': 'end'})
                         return
                     print("爬虫节点正在解析:{}".format(url.encode('utf-8')))
                     content = self.downloader.download(url)
-                    new_urls,data = self.parser.parser(url, content)
-                    self.result.put({'new_urls': new_urls, 'data': data})
+                    if content is not None:
+                        new_urls, data = self.parser.parser(url, content)
+                        # print(new_urls)
+                        # print(data)
+                        self.result.put({'new_urls': new_urls, 'data': data})
+                else:
+                    print("wait url task...")
+                    time.sleep(0.5)
+
             except EOFError as err:
                 print("连接工作节点失败\n {}".format(err))
                 return
             except:
+                for info in sys.exc_info():
+                    print(info)
                 print("{}\nCrawl fail ".format(sys.exc_info()[0]))
+                return
 
 
 if __name__ == "__main__":
